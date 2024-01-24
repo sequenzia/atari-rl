@@ -20,7 +20,7 @@ PROJECT_NAME = "Solen-RL-Project-2"
 os.environ["WANDB_API_KEY"] = "8c880e6018cf423b7714cf055c5fd6152e1ae117"
 os.environ["WANDB_DIR"] = f"{BASE_DIR}/logs"
 
-train(n_runs=8,
+train(n_runs=3,
       algos=["ppo",
              "a2c",
              "ppo",

@@ -1,0 +1,4 @@
+*.csv
+/logs
+**/__pycache__/**
+*.zip

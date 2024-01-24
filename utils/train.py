@@ -63,7 +63,7 @@ def call_train(run_idx: int,
             train_args.trained_agent
         ), "The trained_agent must be a valid path to a .zip file"
 
-    print("=" * 10, env_id, "=" * 10)
+    print("=" * 10, env_id, " | ", train_args.algo, "=" * 10)
     print(f"Seed: {train_args.seed}")
 
     if train_args.track:
@@ -85,7 +85,7 @@ def call_train(run_idx: int,
                          entity=train_args.wandb_entity,
                          tags=train_args.wandb_tags,
                          config=vars(train_args),
-                         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+                        #  sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
                          monitor_gym=True,  # auto-upload the videos of agents playing the game
                          save_code=True)
 
@@ -211,6 +211,8 @@ def train(n_runs: int,
             env = envs[run_idx]
             conf_file = Path(configs_dir) / f"{algo}.yml"
 
+            print(f"------------------------------ Running {run_idx} -> {algo} | {env} ------------------------------\n")
+
             _train_args = TrainArgs(algo=algo,
                                     env=env,
                                     conf_file=conf_file.as_posix(),
@@ -221,9 +223,9 @@ def train(n_runs: int,
                                                   run_idx=run_idx,
                                                   train_args=_train_args))
 
-            time.sleep(10)
+            time.sleep(30)
 
-            print(f"------------------------------------\n\n")
+            print(f"------------------------------------------------------------------\n\n")
             
     for called_future in called_futures:
         print("called_futrue: ", called_future.result())
