@@ -150,9 +150,7 @@ class TrainRun:
             try:
                 import wandb
             except ImportError as e:
-                raise ImportError(
-                    "if you want to use Weights & Biases to track experiment, please install W&B via `pip install wandb`"
-                ) from e
+                raise ImportError("Weights & Biases is not installed") from e
 
             run_name = f"{self.train_args.env}__{self.train_args.algo}__{int(time.time())}"
 
@@ -166,7 +164,7 @@ class TrainRun:
                              entity=self.train_args.wandb_entity,
                              tags=self.train_args.wandb_tags,
                              config=vars(self.train_args),
-                             #  sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+                             sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
                              monitor_gym=True,  # auto-upload the videos of agents playing the game
                              save_code=True)
 
