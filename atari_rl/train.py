@@ -10,6 +10,10 @@ import numpy as np
 import stable_baselines3 as sb3
 import torch as th
 
+from dask import delayed
+from dask.distributed import Client, LocalCluster
+
+
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from pathlib import Path
@@ -18,6 +22,19 @@ from stable_baselines3.common.utils import set_random_seed
 from rl_zoo3.exp_manager import ExperimentManager
 from rl_zoo3.utils import ALGOS
 from rl_zoo3.args import TrainArgs
+
+
+def get_dask_client():
+
+    cluster_address = "localhost:8786"
+
+    return Client(address=cluster_address)
+
+
+
+def train_delayed(run: TrainRun):
+
+    run.train()
 
 
 def create_runs(algos: List[str],
@@ -67,29 +84,36 @@ def create_runs(algos: List[str],
     envs = local_args.pop("envs")
     configs_dir = local_args.pop("configs_dir")
 
-    runs = []
+    with get_dask_client() as client:
 
-    run_idx = 0
-    for algo in algos:
+        runs = []
 
-        for env in envs:
+        run_idx = 0
+        for algo in algos:
 
-            conf_file = Path(configs_dir) / f"{algo}.yml"
+            for env in envs:
 
-            print(f"----------- {run_idx} -> {algo} | {env} -----------\n")
+                run_key = f"{algo.upper()}_{env}"
 
-            train_args = TrainArgs(algo=algo,
-                                   env=env,
-                                   conf_file=conf_file.as_posix(),
-                                   wandb_tags=[algo, env],
-                                   **local_args)
+                conf_file = Path(configs_dir) / f"{algo}.yml"
 
-            run = TrainRun(run_idx=run_idx,
-                           train_args=train_args)
+                print(f"----------- {run_idx} -> {algo.upper()} | {env} -----------\n")
 
-            runs.append(run)
+                train_args = TrainArgs(algo=algo,
+                                       env=env,
+                                       conf_file=conf_file.as_posix(),
+                                       wandb_tags=[algo, env],
+                                       **local_args)
 
-            run_idx += 1
+                run = TrainRun(run_idx=run_idx,
+                               train_args=train_args)
+
+                _train_delayed = delayed(train_delayed)(dask_key_name=run_key,
+                                                        run=run)
+
+                runs.append(_train_delayed)
+
+                run_idx += 1
 
     return runs
 
