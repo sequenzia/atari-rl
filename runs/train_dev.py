@@ -11,39 +11,32 @@ TENSORBOARD_DIR = f"{BASE_DIR}/logs/tensorboard"
 WANDB_PROJECT_NAME = "Solen-RL-Project-2"
 WANDB_ENTITY = "appliedtheta"
 
-DEVICE = "cuda"
-
 SEED = 43
 
-N_TIMESTEMPS = 10000
-
-SAVE_FREQ = 10000
-EVAL_FREQ = 10000
+SAVE_FREQ = 50000
+EVAL_FREQ = 50000
 EVAL_EPISODES = 5
 
-# OPTIMIZE_ON = True
-# N_TRIALS = 1000
-# N_JOBS = 2
-# SAMPLER = "tpe"
-# PRUNER = "median"
-
-
-# ALGOS = ["ppo", "a2c"]
+DEVICE = "cuda"
+TRACK = False
 
 # ENVS = ["BreakoutNoFrameskip-v4",
 #          "PongNoFrameskip-v4",
 #          "SpaceInvadersNoFrameskip-v4",
 #          "MsPacmanNoFrameskip-v4"]
 
-ALGOS = ["her"]
+ALGOS = ["a2c"]
 
-ENVS = ["BreakoutNoFrameskip-v4"]
+ENVS = ["BreakoutNoFrameskip-v4",
+        "PongNoFrameskip-v4",
+        "SpaceInvadersNoFrameskip-v4",
+        "MsPacmanNoFrameskip-v4",
+        "DonkeyKongNoFrameskip-v4"]
 
-RETURN_DELAYED = False
+RETURN_DELAYED = True
 
 runs = create_runs(algos=ALGOS,
                    envs=ENVS,
-                   n_timesteps=N_TIMESTEMPS,
                    log_folder=LOG_DIR,
                    configs_dir=CONFIGS_DIR,
                    tensorboard_log=TENSORBOARD_DIR,
@@ -54,7 +47,7 @@ runs = create_runs(algos=ALGOS,
                    wandb_project_name=WANDB_PROJECT_NAME,
                    wandb_entity=WANDB_ENTITY,
                    device=DEVICE,
-                #    track=True,
+                   track=TRACK,
                    return_delayed=RETURN_DELAYED)
 
 if RETURN_DELAYED:

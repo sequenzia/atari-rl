@@ -100,8 +100,6 @@ def create_runs(algos: List[str],
             else:
                 conf_file = ""
             
-            print(f"----- {conf_file} -----\n")
-
             print(f"----- {run_idx} -> {algo.upper()} | {env} -----\n")
 
             train_args = TrainArgs(algo=algo,
@@ -256,6 +254,7 @@ class TrainRun:
 
             # Normal training
             if self.model is not None:
+                
                 self.exp_manager.learn(self.model)
                 self.exp_manager.save_trained_model(self.model)
         else:
