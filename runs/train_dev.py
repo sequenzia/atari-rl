@@ -1,5 +1,6 @@
 import os
-from atari_rl import create_runs
+import dask
+from atari_rl import create_runs, get_dask_client
 
 BASE_DIR = "/home/sequenzia/dev/repos/atari-rl"
 
@@ -7,18 +8,25 @@ LOG_DIR = f"{BASE_DIR}/agents"
 CONFIGS_DIR = f"{BASE_DIR}/configs"
 TENSORBOARD_DIR = f"{BASE_DIR}/logs/tensorboard"
 
+WANDB_PROJECT_NAME = "Solen-RL-Project-2"
+WANDB_ENTITY = "appliedtheta"
+
+DEVICE = "cuda"
+
 SEED = 43
 
 N_TIMESTEMPS = 10000
 
-SAVE_FREQ = 100000
+SAVE_FREQ = 10000
 EVAL_FREQ = 10000
 EVAL_EPISODES = 5
 
-PROJECT_NAME = "Solen-RL-Project-2"
+# OPTIMIZE_ON = True
+# N_TRIALS = 1000
+# N_JOBS = 2
+# SAMPLER = "tpe"
+# PRUNER = "median"
 
-os.environ["WANDB_API_KEY"] = "8c880e6018cf423b7714cf055c5fd6152e1ae117"
-os.environ["WANDB_DIR"] = f"{BASE_DIR}/logs"
 
 # ALGOS = ["ppo", "a2c"]
 
@@ -27,9 +35,11 @@ os.environ["WANDB_DIR"] = f"{BASE_DIR}/logs"
 #          "SpaceInvadersNoFrameskip-v4",
 #          "MsPacmanNoFrameskip-v4"]
 
-ALGOS = ["ppo"]
+ALGOS = ["her"]
 
 ENVS = ["BreakoutNoFrameskip-v4"]
+
+RETURN_DELAYED = False
 
 runs = create_runs(algos=ALGOS,
                    envs=ENVS,
@@ -41,7 +51,13 @@ runs = create_runs(algos=ALGOS,
                    save_freq=SAVE_FREQ,
                    eval_freq=EVAL_FREQ,
                    eval_episodes=EVAL_EPISODES,
-                   wandb_project_name=PROJECT_NAME,
-                   wandb_entity="appliedtheta",
-                   device="cuda",
-                   track=True)
+                   wandb_project_name=WANDB_PROJECT_NAME,
+                   wandb_entity=WANDB_ENTITY,
+                   device=DEVICE,
+                #    track=True,
+                   return_delayed=RETURN_DELAYED)
+
+if RETURN_DELAYED:
+
+    with get_dask_client() as client:
+        dask.compute(*runs)

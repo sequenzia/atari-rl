@@ -28,8 +28,7 @@ def get_dask_client():
 
     cluster_address = "localhost:8786"
 
-    return Client(address=cluster_address)
-
+    return Client(address=cluster_address, timeout=2)
 
 
 def train_delayed(run: TrainRun):
@@ -39,7 +38,7 @@ def train_delayed(run: TrainRun):
 
 def create_runs(algos: List[str],
                 envs: List[str],
-                configs_dir: List[str],
+                configs_dir: List[str] = [],
                 tensorboard_log: str = "",
                 trained_agent: str = "",
                 truncate_last_trajectory: bool = True,
@@ -47,7 +46,7 @@ def create_runs(algos: List[str],
                 num_threads: int = -1,
                 log_interval: int = -1,
                 eval_freq: int = 25000,
-                optimization_log_path: str = "",
+                optimization_log_path: Optional[str] = None,
                 eval_episodes: int = 5,
                 n_eval_envs: int = 1,
                 save_freq: int = -1,
@@ -65,8 +64,8 @@ def create_runs(algos: List[str],
                 pruner: str = "median",
                 n_startup_trials: int = 10,
                 n_evaluations: int = 1,
-                storage: str = "",
-                study_name: str = "",
+                storage: Optional[str] = None,
+                study_name: Optional[str] = None,
                 verbose: int = 1,
                 gym_packages: List[str] = [],
                 env_kwargs: Dict[str, str] = dict(),
@@ -76,44 +75,54 @@ def create_runs(algos: List[str],
                 track: bool = False,
                 wandb_project_name: str = "sb3",
                 wandb_entity: str = "",
-                progress: bool = False):
+                progress: bool = False,
+                return_delayed: bool = False):
 
     local_args = locals()
 
     algos = local_args.pop("algos")
     envs = local_args.pop("envs")
     configs_dir = local_args.pop("configs_dir")
+    return_delayed = local_args.pop("return_delayed")
 
-    with get_dask_client() as client:
+    runs = []
 
-        runs = []
+    run_idx = 0
+    for algo in algos:
 
-        run_idx = 0
-        for algo in algos:
+        for env in envs:
 
-            for env in envs:
+            run_key = f"{algo.upper()}_{env}"
 
-                run_key = f"{algo.upper()}_{env}"
-
+            if configs_dir:
                 conf_file = Path(configs_dir) / f"{algo}.yml"
+                conf_file = conf_file.as_posix()
+            else:
+                conf_file = ""
+            
+            print(f"----- {conf_file} -----\n")
 
-                print(f"----------- {run_idx} -> {algo.upper()} | {env} -----------\n")
+            print(f"----- {run_idx} -> {algo.upper()} | {env} -----\n")
 
-                train_args = TrainArgs(algo=algo,
-                                       env=env,
-                                       conf_file=conf_file.as_posix(),
-                                       wandb_tags=[algo, env],
-                                       **local_args)
+            train_args = TrainArgs(algo=algo,
+                                   env=env,
+                                   conf_file=conf_file,
+                                   wandb_tags=[algo, env],
+                                   **local_args)
 
-                run = TrainRun(run_idx=run_idx,
-                               train_args=train_args)
+            run = TrainRun(run_idx=run_idx,
+                           train_args=train_args)
 
-                _train_delayed = delayed(train_delayed)(dask_key_name=run_key,
-                                                        run=run)
+            if return_delayed:
 
-                runs.append(_train_delayed)
+                with get_dask_client() as client:
 
-                run_idx += 1
+                    runs.append(delayed(train_delayed)(dask_key_name=run_key,
+                                                       run=run))
+            else:
+                runs.append(run.train())
+
+            run_idx += 1
 
     return runs
 
@@ -188,7 +197,7 @@ class TrainRun:
                              entity=self.train_args.wandb_entity,
                              tags=self.train_args.wandb_tags,
                              config=vars(self.train_args),
-                             sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+                            #  sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
                              monitor_gym=True,  # auto-upload the videos of agents playing the game
                              save_code=True)
 
@@ -250,4 +259,7 @@ class TrainRun:
                 self.exp_manager.learn(self.model)
                 self.exp_manager.save_trained_model(self.model)
         else:
+
+            print(f"\n::::: Hyperparameter optimization for {env_id} and {self.train_args.algo} :::::\n")
+
             self.exp_manager.hyperparameters_optimization()
