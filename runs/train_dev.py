@@ -13,30 +13,42 @@ WANDB_ENTITY = "appliedtheta"
 
 SEED = 43
 
-SAVE_FREQ = 50000
-EVAL_FREQ = 50000
+SAVE_FREQ = 500000
+EVAL_FREQ = 100000
 EVAL_EPISODES = 5
 
 DEVICE = "cuda"
-TRACK = False
 
-# ENVS = ["BreakoutNoFrameskip-v4",
-#          "PongNoFrameskip-v4",
-#          "SpaceInvadersNoFrameskip-v4",
-#          "MsPacmanNoFrameskip-v4"]
+# ENVS = ["ALE/Breakout-v5",
+#         "ALE/SpaceInvaders-v5",
+#         "ALE/MsPacman-v5",
+#         "ALE/DonkeyKong-v5",
+#         "ALE/Frogger-v5",
+#         "ALE/Asteroids-v5",
+#         "ALE/Qbert-v5",
+#         "ALE/Pitfall-v5",
+#         "ALE/Centipede-v5",
+#         "ALE/Pong-v5"]
+
+ENVS_A = ["ALE/Breakout-v5",
+          "ALE/SpaceInvaders-v5",
+          "ALE/MsPacman-v5",
+          "ALE/DonkeyKong-v5",
+          "ALE/Frogger-v5"]
+
+ENVS_B = ["ALE/Asteroids-v5",
+          "ALE/Qbert-v5",
+          "ALE/Pitfall-v5",
+          "ALE/Centipede-v5",
+          "ALE/Pong-v5"]
 
 ALGOS = ["a2c"]
 
-ENVS = ["BreakoutNoFrameskip-v4",
-        "PongNoFrameskip-v4",
-        "SpaceInvadersNoFrameskip-v4",
-        "MsPacmanNoFrameskip-v4",
-        "DonkeyKongNoFrameskip-v4"]
-
+TRACK = True
 RETURN_DELAYED = True
 
 runs = create_runs(algos=ALGOS,
-                   envs=ENVS,
+                   envs=ENVS_A,
                    log_folder=LOG_DIR,
                    configs_dir=CONFIGS_DIR,
                    tensorboard_log=TENSORBOARD_DIR,
