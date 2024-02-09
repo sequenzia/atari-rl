@@ -20,17 +20,6 @@ EVAL_EPISODES = 5
 
 DEVICE = "cuda"
 
-# ENVS = ["ALE/Breakout-v5",
-#         "ALE/SpaceInvaders-v5",
-#         "ALE/MsPacman-v5",
-#         "ALE/DonkeyKong-v5",
-#         "ALE/Frogger-v5",
-#         "ALE/Asteroids-v5",
-#         "ALE/Qbert-v5",
-#         "ALE/Pitfall-v5",
-#         "ALE/Centipede-v5",
-#         "ALE/Pong-v5"]
-
 ENVS_A = ["ALE/Breakout-v5",
           "ALE/SpaceInvaders-v5",
           "ALE/MsPacman-v5",
