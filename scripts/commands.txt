@@ -1,0 +1,14 @@
+docker run -d -it --privileged=true --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all v /home/sequenzia/dev: --shm-size=256m --name gym -h gym nvidia/cuda:12.3.1-runtime-ubuntu22.04
+
+docker run -d -it --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all --shm-size=256m --name gym -h gym gym:latest
+
+
+groupadd -g 1000 -r zia
+useradd -rm -d /home/sequenzia -s /bin/bash -g zia -G sudo -u 1000 sequenzia
+echo 'sequenzia:5252' | chpasswd
+
+
+docker run -d -u sequenzia -it --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -v /home/sequenzia/dev:/home/sequenzia/dev --name gym -h gym gym:latest
+
+
+docker run -d -u root -it --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all --name gym -h gym gym:latest
