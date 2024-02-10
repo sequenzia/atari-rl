@@ -9,6 +9,7 @@ import gymnasium as gym
 import numpy as np
 import stable_baselines3 as sb3
 import torch as th
+import wandb
 
 from dask import delayed
 from dask.distributed import Client, LocalCluster
@@ -37,7 +38,7 @@ def train_delayed(run: TrainRun):
 
 
 def create_runs(algos: List[str],
-                envs: List[str],
+                games: List[str],
                 configs_dir: List[str] = [],
                 tensorboard_log: str = "",
                 trained_agent: str = "",
@@ -73,62 +74,88 @@ def create_runs(algos: List[str],
                 hyperparams: Dict[str, str] = dict(),
                 uuid_on: bool = False,
                 track: bool = False,
-                wandb_project_name: str = "sb3",
+                wandb_project_name: str = "",
                 wandb_entity: str = "",
                 progress: bool = False,
-                return_delayed: bool = False):
+                platform: str = "",
+                dask_on: bool = False):
+
+    print("\n")
 
     local_args = locals()
 
     algos = local_args.pop("algos")
-    envs = local_args.pop("envs")
+    games = local_args.pop("games")
     configs_dir = local_args.pop("configs_dir")
-    return_delayed = local_args.pop("return_delayed")
+    platform = local_args.pop("platform")
+    dask_on = local_args.pop("dask_on")
 
     runs = []
 
     run_idx = 0
     for algo in algos:
 
-        for env in envs:
+        for game in games:
 
-            run_key = f"{algo.upper()}_{env}"
+            run_key = f"{algo.upper()}_{game}"
+
+            env = f"ALE/{game}-v5"
 
             if configs_dir:
                 conf_file = Path(configs_dir) / f"{algo}.yml"
                 conf_file = conf_file.as_posix()
             else:
                 conf_file = ""
-            
-            print(f"----- {run_idx} -> {algo.upper()} | {env} -----\n")
+
+            print(f"----- {run_idx} -> {algo.upper()} | {game} -----\n")
 
             train_args = TrainArgs(algo=algo,
+                                   game=game,
                                    env=env,
                                    conf_file=conf_file,
-                                   wandb_tags=[algo, env],
+                                   wandb_tags=[algo.upper(), game, platform],
                                    **local_args)
 
             run = TrainRun(run_idx=run_idx,
+                           run_key=run_key,
                            train_args=train_args)
 
-            if return_delayed:
+            if dask_on:
 
-                with get_dask_client() as client:
+                runs.append(run)
 
-                    runs.append(delayed(train_delayed)(dask_key_name=run_key,
-                                                       run=run))
             else:
+
                 runs.append(run.train())
 
             run_idx += 1
 
-    return runs
+    delayed_runs = []
 
+    if dask_on:
+
+        with get_dask_client() as client:
+
+            for run in runs:
+
+                dask_key = f"{run.run_key}"
+
+                delayed_run = delayed(train_delayed)(dask_key_name=dask_key,
+                                                     run=run)
+
+                delayed_runs.append(delayed_run)
+
+        return delayed_runs
+
+    else:
+
+        return runs
 
 @dataclass
 class TrainRun:
 
     run_idx: int
+    run_key: str
     train_args: TrainArgs
     exp_manager: Optional[ExperimentManager] = field(default=None)
     model: Optional[sb3.base.BaseAlgorithm] = field(default=None)
@@ -176,27 +203,25 @@ class TrainRun:
 
         print("=" * 10, env_id, " | ", self.train_args.algo, "=" * 10)
         print(f"Seed: {self.train_args.seed}")
+        print("\n")
 
         if self.train_args.track:
-            try:
-                import wandb
-            except ImportError as e:
-                raise ImportError("Weights & Biases is not installed") from e
 
-            run_name = f"{self.train_args.env}__{self.train_args.algo}__{int(time.time())}"
+            run_name = f"{self.train_args.game}_{self.train_args.algo.upper()}_{int(time.time())}"
 
             self.train_args.tensorboard_log = f"{self.train_args.tensorboard_log}/{run_name}"
 
-            wandb.tensorboard.patch(
-                root_logdir=self.train_args.tensorboard_log)
+            wandb.tensorboard.patch(root_logdir=self.train_args.tensorboard_log,
+                                    pytorch=True)
 
             run = wandb.init(name=run_name,
                              project=self.train_args.wandb_project_name,
                              entity=self.train_args.wandb_entity,
+                             group=self.train_args.algo,
+                             job_type="train",
                              tags=self.train_args.wandb_tags,
                              config=vars(self.train_args),
-                            #  sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-                             monitor_gym=True,  # auto-upload the videos of agents playing the game
+                             monitor_gym=True,
                              save_code=True)
 
         self.exp_manager = ExperimentManager(self.train_args,
@@ -254,9 +279,12 @@ class TrainRun:
 
             # Normal training
             if self.model is not None:
-                
+
                 self.exp_manager.learn(self.model)
                 self.exp_manager.save_trained_model(self.model)
+
+                wandb.finish()
+
         else:
 
             print(f"\n::::: Hyperparameter optimization for {env_id} and {self.train_args.algo} :::::\n")
