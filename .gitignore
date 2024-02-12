@@ -1,4 +1,4 @@
-*.csv
-/logs
 **/__pycache__/**
-/agents/**
+/logs
+*rl_model_*
+
