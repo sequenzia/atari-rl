@@ -2,7 +2,7 @@ import os
 import dask
 from atari_rl import create_runs, get_dask_client
 
-BASE_DIR = "/home/sequenzia/dev/repos/atari-rl"
+BASE_DIR = "/home/ubuntu/dev/repos/atari-rl"
 
 LOG_DIR = f"{BASE_DIR}/agents"
 CONFIGS_DIR = f"{BASE_DIR}/configs"
@@ -17,20 +17,20 @@ SAVE_FREQ = 500000
 EVAL_FREQ = 100000
 EVAL_EPISODES = 5
 
-DEVICE = "cpu"
+DEVICE = "cuda"
 NUM_THREADS = 1
-PLATFORM = "AWS"
+PLATFORM = "Lambda"
 
 GAMES = ["Breakout",
          "SpaceInvaders",
          "MsPacman",
          "Assault",
-         "Qbert",
-         "Asterix",
-         "Seaquest",
-         "Asteroids",
-         "Centipede",
-         "Pong"]
+         "Qbert"]
+        #  "Asterix",
+        #  "Seaquest",
+        #  "Asteroids",
+        #  "Centipede",
+        #  "Pong"]
 
 ALGOS = ["dqn"]
 
