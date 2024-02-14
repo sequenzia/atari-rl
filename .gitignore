@@ -2,3 +2,5 @@
 /logs
 *rl_model_*
 /temp
+/agents
+/data

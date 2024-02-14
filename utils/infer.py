@@ -144,6 +144,7 @@ class Args:
     custom_objects_on: bool
     num_threads: int
     env_kwargs: Dict[str, Any]
+    wandb_on: bool
     debug_on: bool
 
     run_name: str = field(init=False)
@@ -218,7 +219,7 @@ class InferLog:
     @property
     def times(self) -> List[float]:
         return [episode.episode_time for episode in self.episode_logs]
-    
+
     @property
     def frame_numbers(self) -> List[float]:
         return [episode.episode_frame_number for episode in self.episode_logs]
@@ -230,7 +231,8 @@ class InferLog:
 
 def save_wandb_logs(infer_logs: List[InferLog],
                     project: str,
-                    args: Args):
+                    args: Args,
+                    append_run_key: bool = False) -> None:
 
     n_episodes = sum([infer_log.n_episodes for infer_log in infer_logs])
 
@@ -284,17 +286,28 @@ def save_wandb_logs(infer_logs: List[InferLog],
 
     for idx, run_frame_number in enumerate(run_frame_numbers):
 
-        wandb.log(data={f"{args.run_key}/episode_score": episode_scores[idx][1],
-                        f"{args.run_key}/episode_time": episode_times[idx][1],
-                        f"{args.run_key}/episode_length": episode_lengths[idx][1],
-                        f"{args.run_key}/episode_lives": episode_lives[idx][1],
-                        f"{args.run_key}/run_frame_number": run_frame_number[0]},
-                  step=run_frame_number[0])
+        if append_run_key:
+
+            wandb.log(data={f"{args.run_key}/episode_score": episode_scores[idx][1],
+                            f"{args.run_key}/episode_time": episode_times[idx][1],
+                            f"{args.run_key}/episode_length": episode_lengths[idx][1],
+                            f"{args.run_key}/episode_lives": episode_lives[idx][1],
+                            f"{args.run_key}/run_frame_number": run_frame_number[0]},
+                      step=run_frame_number[0])
+        else:
+
+            wandb.log(data={f"episode_score": episode_scores[idx][1],
+                            f"{args.run_key}/episode_score": episode_scores[idx][1],
+                            f"episode_time": episode_times[idx][1],
+                            f"episode_length": episode_lengths[idx][1],
+                            f"{args.run_key}/episode_length": episode_lengths[idx][1],
+                            f"episode_lives": episode_lives[idx][1],
+                            f"run_frame_number": run_frame_number[0]},
+                      step=run_frame_number[0])
 
     wandb.finish()
 
     return
-
 
 
 def infer(run_key: str,
@@ -321,6 +334,7 @@ def infer(run_key: str,
           num_threads: int = -1,
           project: str = "eval",
           env_kwargs: Optional[Dict[str, Any]] = {},
+          wandb_on: bool = False,
           debug_on: bool = False) -> InferLog:
 
     local_args = locals()
@@ -477,10 +491,12 @@ def infer(run_key: str,
 
                         if env_info.get("episode"):
 
-                            episode_log = infer_logs[env_idx].add_log(env_info=env_info)
+                            episode_log = infer_logs[env_idx].add_log(
+                                env_info=env_info)
 
                             print(f"\n")
-                            print(f"{run_key}: {env_idx+1} EPISODE: {infer_logs[env_idx].n_episodes}")
+                            print(
+                                f"{run_key}: {env_idx+1} EPISODE: {infer_logs[env_idx].n_episodes}")
 
                             if args.debug_on:
 
@@ -488,8 +504,10 @@ def infer(run_key: str,
                                 print(f"info -> {infos}")
                                 print(f"\n")
 
-                            print(f"Episode Score: {episode_log.episode_score:.2f}")
-                            print(f"Episode Length: {episode_log.episode_length}")
+                            print(
+                                f"Episode Score: {episode_log.episode_score:.2f}")
+                            print(
+                                f"Episode Length: {episode_log.episode_length}")
 
             else:
 
@@ -535,8 +553,10 @@ def infer(run_key: str,
 
     env.close()
 
-    save_wandb_logs(infer_logs=infer_logs,
-                    project=project,
-                    args=args)
+    if wandb_on:
+        save_wandb_logs(infer_logs=infer_logs,
+                        project=project,
+                        args=args,
+                        append_run_key=False)
 
     return infer_logs
