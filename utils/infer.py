@@ -144,6 +144,7 @@ class Args:
     custom_objects_on: bool
     num_threads: int
     env_kwargs: Dict[str, Any]
+    project: str
     wandb_on: bool
     debug_on: bool
 
@@ -237,9 +238,8 @@ def save_wandb_logs(infer_logs: List[InferLog],
     n_episodes = sum([infer_log.n_episodes for infer_log in infer_logs])
 
     wandb.init(project=project,
-               name=args.run_name,
-               group=args.algo,
-               job_type="eval",
+               name=f"{args.algo.upper()}_{args.game}",
+               group=args.game,
                settings=wandb.Settings(disable_job_creation=True),
                config={'game': args.game,
                        'algo': args.algo,
@@ -293,7 +293,7 @@ def save_wandb_logs(infer_logs: List[InferLog],
                             f"{args.run_key}/episode_length": episode_lengths[idx][1],
                             f"{args.run_key}/episode_lives": episode_lives[idx][1],
                             f"{args.run_key}/run_frame_number": run_frame_number[0]},
-                      step=run_frame_number[0])
+                      step=idx)
         else:
 
             wandb.log(data={f"episode_score": episode_scores[idx][1],
@@ -303,7 +303,7 @@ def save_wandb_logs(infer_logs: List[InferLog],
                             f"{args.run_key}/episode_length": episode_lengths[idx][1],
                             f"episode_lives": episode_lives[idx][1],
                             f"run_frame_number": run_frame_number[0]},
-                      step=run_frame_number[0])
+                      step=idx)
 
     wandb.finish()
 
@@ -337,11 +337,7 @@ def infer(run_key: str,
           wandb_on: bool = False,
           debug_on: bool = False) -> InferLog:
 
-    local_args = locals()
-
-    project = local_args.pop("project")
-
-    args = Args(**local_args)
+    args = Args(**locals())
 
     infer_logs: List[InferLog] = []
     wandb_logs = defaultdict(list)
@@ -360,7 +356,7 @@ def infer(run_key: str,
                                                       args.load_checkpoint,
                                                       args.load_last_checkpoint)
 
-    print(f"\nLoading {model_path}\n")
+    print(f"\nLoading ----> {model_path}\n")
 
     # Off-policy algorithm only support one env for now
     off_policy_algos = ["qrdqn", "dqn", "ddpg", "sac", "her", "td3", "tqc"]
